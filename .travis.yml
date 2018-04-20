@@ -4,14 +4,13 @@ language: python
 
 matrix:  
   include:
-      # works on Precise and Trusty
       - os: linux
         addons:
           apt:
             sources:
               - ubuntu-toolchain-r-test
             packages:
-              - g++-7  
+              - g++-5  
       - python: 3.5
           env:
             - PYFLAKES=1
@@ -39,9 +38,9 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
   - if [[ "${OPENBLAS}" == "1" ]]; then
-        conda install nomkl numpy scipy cython;
+        conda install nomkl numpy scipy cython sympy;
       else
-        conda install mkl numpy scipy cython;
+        conda install mkl numpy scipy cython sympy;
     fi
   - pip install IBMQuantumExperience
   # Finally, build Cython modules.
