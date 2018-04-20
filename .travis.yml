@@ -7,7 +7,7 @@ matrix:
     - python: 3.6
       env:
         - PYFLAKES=1 PEP8=1
-      install:
+      install: skip
       script:
         - pyflakes qiskit
         - pycodestyle qiskit
