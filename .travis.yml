@@ -43,9 +43,9 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
   - if [[ "${OPENBLAS}" == "1" ]]; then
-        conda install nomkl numpy scipy cython sympy ply networkx matplotlib pylint pycodestyle;
+        conda install nomkl numpy scipy cython sympy ply networkx matplotlib pylint pycodestyle pyflakes;
       else
-        conda install mkl numpy scipy cython sympy ply networkx matplotlib pylint pycodestyle;
+        conda install mkl numpy scipy cython sympy ply networkx matplotlib pylint pycodestyle pyflakes;
     fi
   - pip install IBMQuantumExperience
   # Finally, build Cython modules.
