@@ -8,7 +8,7 @@ matrix:
       env:
         - PYFLAKES=1 PEP8=1
       install:
-        - sudo apt-get install pyflakes pycodestyle
+        - pip install pyflakes pycodestyle
       script:
         - pyflakes qiskit
         - pycodestyle qiskit
