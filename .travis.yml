@@ -7,7 +7,8 @@ matrix:
     - python: 3.6
       env:
         - PYFLAKES=1 PEP8=1
-      install: skip
+      install:
+        - sudo apt-get install pyflakes pycodestyle
       script:
         - pyflakes qiskit
         - pycodestyle qiskit
@@ -47,9 +48,9 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
   - if [[ "${OPENBLAS}" == "1" ]]; then
-        conda install nomkl numpy scipy cython sympy ply networkx matplotlib pylint pycodestyle pyflakes;
+        conda install nomkl numpy scipy cython sympy ply networkx matplotlib;
       else
-        conda install mkl numpy scipy cython sympy ply networkx matplotlib pylint pycodestyle pyflakes;
+        conda install mkl numpy scipy cython sympy ply networkx matplotlib;
     fi
   - pip install IBMQuantumExperience
   # Finally, build Cython modules.
