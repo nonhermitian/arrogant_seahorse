@@ -117,7 +117,7 @@ include = [os.path.abspath('qiskit/cython/src'),
            os.path.abspath('qiskit/cython/src/third-party/headers')]
 warnings = ['-pedantic', '-Wall', '-Wextra', '-Wfloat-equal', '-Wundef',
             '-Wcast-align', '-Wwrite-strings', '-Wmissing-declarations',
-            '-Wshadow', '-Woverloaded-virtual']
+            '-Woverloaded-virtual']
 opt = ['-ffast-math', '-O3', '-march=native']
 if sys.platform != 'win32':
     extra_compile_args = ['-g', '-std=c++11'] + opt + warnings
