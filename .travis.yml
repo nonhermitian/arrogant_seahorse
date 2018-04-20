@@ -35,6 +35,7 @@ install:
       else
         conda install mkl numpy scipy cython;
     fi
+  - pip install IBMQuantumExperience
   # Finally, build Cython modules.
   - python setup.py build_ext --inplace
 
