@@ -6,16 +6,16 @@ matrix:
   include:
     - python: 3.5
       env:
-        - PYFLAKES=1 PEP8=1 COMPILER=g++-5
+        - PYFLAKES=1 PEP8=1 CC=gcc-5 =g++-5
       script:
         - pylint -rn qiskit test
         - pycodestyle --max-line-length=100 qiskit test
     - python: 3.6
-      env: COMPILER=g++-5
+      env: CC=gcc-5 =g++-5
     - python: 3.6
       env: CC=clang CXX=clang++
     - python: 3.6
-      env: OPENBLAS=1 COMPILER=g++-5
+      env: OPENBLAS=1 CC=gcc-5 =g++-5
 
 before_install:
   # C++14
@@ -43,13 +43,14 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
   - if [[ "${OPENBLAS}" == "1" ]]; then
-        conda install nomkl numpy scipy cython sympy ply;
+        conda install nomkl numpy scipy cython sympy ply networkx matplotlib;
       else
-        conda install mkl numpy scipy cython sympy ply;
+        conda install mkl numpy scipy cython sympy ply networkx matplotlib;
     fi
   - pip install IBMQuantumExperience
   # Finally, build Cython modules.
   - python setup.py build_ext --inplace
+  - python setup.py install
 
 # command to run tests
 script: 
