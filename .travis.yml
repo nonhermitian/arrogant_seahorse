@@ -4,12 +4,14 @@ language: python
 
 matrix:
   include:
-    - python: 3.5
+    - python: 3.6
       env:
         - PYFLAKES=1 PEP8=1 CC=gcc-5 CXX=g++-5
       script:
-        - pylint -rn qiskit test
-        - pycodestyle --max-line-length=100 qiskit test
+        - pyflakes qiskit
+        - pycodestyle qiskit
+    - python: 3.5
+      env: CC=gcc-5 CXX=g++-5
     - python: 3.6
       env: CC=gcc-5 CXX=g++-5
     - python: 3.6
@@ -18,18 +20,17 @@ matrix:
       env: OPENBLAS=1 CC=gcc-5 CXX=g++-5
 
 before_install:
-  # C++14
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test;
       sudo apt-get update -qq;
       sudo apt-get install -qq g++-5;
     fi
+
 # command to install dependencies
 install:
-  - echo $TRAVIS_OS_NAME
-  - gcc-5 --version 
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+      # clang omp libs not automatically added to path
       export LD_LIBRARY_PATH=$(if [[ $CC == "clang" ]]; then echo -n '/usr/local/clang/lib'; fi);
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh;
@@ -50,7 +51,7 @@ install:
   - pip install IBMQuantumExperience
   # Finally, build Cython modules.
   - python setup.py build_ext --inplace
-  - python setup.py install
+  #- python setup.py install
 
 # command to run tests
 script: 
