@@ -1,0 +1,5 @@
+{
+    "circuitName": {
+        "qasm": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q_name[3];\ncreg c_name[3];\nu3(0.300000000000000,0.200000000000000,0.100000000000000) q_name[0];\nh q_name[1];\ncx q_name[1],q_name[2];\nbarrier q_name[0],q_name[1],q_name[2];\ncx q_name[0],q_name[1];\nh q_name[0];\nif(c_name==1) z q_name[2];\nif(c_name==1) x q_name[2];\nmeasure q_name[0] -> c_name[0];\nmeasure q_name[1] -> c_name[1];\n"
+    }
+}
