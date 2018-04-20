@@ -2,9 +2,17 @@ sudo: false
 dist: trusty
 language: python
 
-matrix:
-    include:
-        - python: 3.5
+matrix:  
+  include:
+      # works on Precise and Trusty
+      - os: linux
+        addons:
+          apt:
+            sources:
+              - ubuntu-toolchain-r-test
+            packages:
+              - g++-7  
+      - python: 3.5
           env:
             - PYFLAKES=1
             - PEP8=1
@@ -16,7 +24,7 @@ matrix:
         - python: 3.6
           env: CC=clang CXX=clang++
         - python: 3.6
-          env: OPENMP=1
+          env: OPENBLAS=1
 
 # command to install dependencies
 install:
@@ -30,7 +38,7 @@ install:
   - conda info -a
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
-  - if [[ "${OPENMP}" == "1" ]]; then
+  - if [[ "${OPENBLAS}" == "1" ]]; then
         conda install nomkl numpy scipy cython;
       else
         conda install mkl numpy scipy cython;
