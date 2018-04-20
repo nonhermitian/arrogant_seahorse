@@ -18,17 +18,25 @@ matrix:
           script:
             - pylint -rn qiskit test
             - pycodestyle --max-line-length=100 qiskit test
-        - python: 3.6
+      - python: 3.6
           env:
-        - python: 3.6
+      - python: 3.6
           env: CC=clang CXX=clang++
-        - python: 3.6
+      - python: 3.6
           env: OPENBLAS=1
+      - os: osx
+          osx_image: xcode9.2
+          language: generic
+          
 
 # command to install dependencies
 install:
   - echo $TRAVIS_OS_NAME 
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh;
+    fi
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
