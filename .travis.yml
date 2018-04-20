@@ -6,16 +6,16 @@ matrix:
   include:
     - python: 3.5
       env:
-        - PYFLAKES=1 PEP8=1 CC=gcc-5 =g++-5
+        - PYFLAKES=1 PEP8=1 CC=gcc-5 CXX=g++-5
       script:
         - pylint -rn qiskit test
         - pycodestyle --max-line-length=100 qiskit test
     - python: 3.6
-      env: CC=gcc-5 =g++-5
+      env: CC=gcc-5 CXX=g++-5
     - python: 3.6
       env: CC=clang CXX=clang++
     - python: 3.6
-      env: OPENBLAS=1 CC=gcc-5 =g++-5
+      env: OPENBLAS=1 CC=gcc-5 CXX=g++-5
 
 before_install:
   # C++14
