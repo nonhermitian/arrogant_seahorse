@@ -32,6 +32,8 @@ import numpy as np
 from qiskit._result import Result
 from qiskit.backends import BaseBackend
 
+from qiskit.cython.qiskit_simulator import SimulatorWrapper
+
 logger = logging.getLogger(__name__)
 
 EXTENSION = '.exe' if platform.system() == 'Windows' else ''
@@ -81,9 +83,10 @@ class QISKitCppSimulator(BaseBackend):
 
     def run(self, q_job):
         qobj = q_job.qobj
-        result = run(qobj, self._configuration['exe'])
+        simulator = SimulatorWrapper()
+        result = simulator.run(json.dumps(qobj, cls=QASMSimulatorEncoder))
+        result = json.loads(result, cls=QASMSimulatorDecoder)
         return Result(result, qobj)
-
 
 class CliffordCppSimulator(BaseBackend):
     """"C++ Clifford circuit simulator with realistic noise."""
@@ -126,8 +129,11 @@ class CliffordCppSimulator(BaseBackend):
         else:
             qobj['config'] = {'simulator': 'clifford'}
 
-        result = run(qobj, self._configuration['exe'])
+        simulator = SimulatorWrapper()
+        result = simulator.run(json.dumps(qobj, cls=QASMSimulatorEncoder))
+        result = json.loads(result, cls=QASMSimulatorDecoder)
         return Result(result, qobj)
+
 
 
 def run(qobj, executable):

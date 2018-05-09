@@ -166,8 +166,8 @@ if "CFLAGS" in cfg_vars:
     cfg_vars["CFLAGS"] = cfg_vars["CFLAGS"].replace("-Wstrict-prototypes", "")
 
 # Simulator extension
-qasm_simulator = Extension('qiskit.cython.qasm_simulator',
-                           sources=['qiskit/cython/qasm_simulator.pyx'],
+qasm_simulator = Extension('qiskit.cython.qiskit_simulator',
+                           sources=['qiskit/cython/qiskit_simulator.pyx'],
                            extra_link_args=extra_link_args,
                            extra_compile_args=extra_compile_args,
                            libraries=libraries,
