@@ -9,8 +9,9 @@ cdef extern from "simulator.hpp" namespace "QISKIT":
 
     cdef cppclass Simulator:
         Simulator() except +
-        string execute(int indent) except +
-        void load_qobj_string(string qobj) except +
+        string execute() except +
+    
+    inline void from_json(const string &js, Simulator &qobj) except +
 
 
 cdef class SimulatorWrapper:
@@ -20,13 +21,10 @@ cdef class SimulatorWrapper:
     Methods:
         run: executes a qobj.
     """
-    cdef Simulator *thisptr
+    cdef Simulator thisptr
 
     def __cinit__(self):
-        self.thisptr = new Simulator()
-
-    def __dealloc__(self):
-        del self.thisptr
+        self.thisptr = Simulator()
 
     def run(self, qobj_str):
         """
@@ -39,5 +37,5 @@ cdef class SimulatorWrapper:
             result JSON serialized as a python string.
         """
         # serialize qobj as json byte string
-        self.thisptr.load_qobj_string(qobj_str.encode())
-        return self.thisptr.execute(-1).decode()
+        from_json(qobj_str.encode(), self.thisptr)
+        return self.thisptr.execute().decode()

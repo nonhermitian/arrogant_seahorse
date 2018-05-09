@@ -92,7 +92,7 @@ PACKAGES = ["qiskit",
             "qiskit.dagcircuit",
             "qiskit.extensions",
             "qiskit.extensions.standard",
-            "qiskit.extensions.qasm_simulator_cpp",
+            "qiskit.extensions.qiskit_simulator",
             "qiskit.extensions.quantum_initializer",
             "qiskit.mapper",
             "qiskit.qasm",
@@ -178,6 +178,8 @@ qasm_simulator = Extension('qiskit.cython.qasm_simulator',
 EXT_MODULES.append(qasm_simulator)
 
 # Add command for running unittests from setup.py
+
+
 class TestCommand(Command):
     """Run unittests from setup."""
     description = 'Run unittests from setup'
@@ -202,8 +204,8 @@ class PylintCommand(Command):
     """Run Pylint on all QISKit Python source files."""
     description = 'Run Pylint on QISKIT Python source files'
     user_options = [
-      # The format is (long option, short option, description).
-      ('pylint-rcfile=', None, 'path to Pylint config file')]
+        # The format is (long option, short option, description).
+        ('pylint-rcfile=', None, 'path to Pylint config file')]
 
     def initialize_options(self):
         """Set default values for options."""
@@ -282,7 +284,7 @@ class CoverageCommand(Command):
     def run(self):
         """Run command."""
         command = 'coverage erase; coverage run --source qiskit -m unittest ' \
-                'discover -s test -q; coverage html'
+            'discover -s test -q; coverage html'
         subprocess.run(command, shell=True, stderr=subprocess.STDOUT)
 
 
@@ -295,7 +297,7 @@ setup(
     include_dirs=include_dirs,
     headers=HEADERS,
     ext_modules=cythonize(EXT_MODULES),
-    cmdclass={'build_ext': build_ext, 'test': TestCommand, 
+    cmdclass={'build_ext': build_ext, 'test': TestCommand,
               'lint': PylintCommand, 'pep8': PEP8Command,
               'profile': ProfileCommand,
               'coverage': CoverageCommand},
