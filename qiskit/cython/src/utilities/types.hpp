@@ -31,9 +31,7 @@ limitations under the License.
 #include <iostream>
 #include <map>
 #include <vector>
-#include <stdint.h>
 
-#include "qubit_vector.hpp"  // N-qubit vector class
 #include "binary_vector.hpp" // Binary Vector class
 #include "clifford.hpp"      // Clifford tableau class
 #include "json.hpp"          // JSON Class library
@@ -46,22 +44,19 @@ limitations under the License.
  ******************************************************************************/
 
 // Numeric Types
-using int_t = int64_t;
-using uint_t = uint64_t;
+using int_t = long long int;
+using uint_t = unsigned long long int;
 using complex_t = std::complex<double>;
-using cvector_t = std::vector<complex_t>;
-using rvector_t = std::vector<double>;
-using cmatrix_t = matrix<complex_t>;
-using rmatrix_t = matrix<double>;
 
 // Timer
 using myclock_t = std::chrono::system_clock;
 
-// Custom Classes
-using QV::QubitVector;
-
 // Register Types
+using cvector_t = std::vector<complex_t>;
+using rvector_t = std::vector<double>;
 using svector_t = std::vector<std::string>;
+using cmatrix_t = matrix<complex_t>;
+using rmatrix_t = matrix<double>;
 using creg_t = std::vector<uint_t>;
 using cket_t = std::map<std::string, complex_t>;
 using rket_t = std::map<std::string, double>;
@@ -90,9 +85,7 @@ template <typename T1>
 std::ostream &operator<<(std::ostream &out, const std::set<T1> &s);
 
 // BinaryVector
-inline std::ostream &operator<<(std::ostream &out, const BinaryVector &bv);
-// QubitVector
-inline std::ostream &operator<<(std::ostream &out, const QubitVector &qv);
+inline std::ostream &operator<<(std::ostream &out, const BinaryVector &b);
 
 /*******************************************************************************
  *
@@ -131,10 +124,9 @@ enum class gate_t {
   // Custom Gates
   Wait, // Single qubit wait gate
   CZ,   // Controlled-phase gate
-  RZZ,  // two-qubit zz-rotation
+  UZZ,  // two-qubit phase gate Uzz(A) = exp(-I*A*ZZ)
 
   // Simulator commands
-  Snapshot, // save state of simulator for printing
   Noise, // gate to switch simulator noise on and off
   Save,  // save the current state of the qubit for later use
   Load   // load a previously saved qubit state into current qubit state
@@ -142,6 +134,53 @@ enum class gate_t {
 
 using gateset_t = std::map<std::string, gate_t>;
 
+/***************************************************************************/ /**
+ *
+ * MultiPartiteIndexing class
+ *******************************************************************************/
+
+class MultiPartiteIndex {
+
+public:
+  MultiPartiteIndex() {
+
+    // initialize masks
+    for (uint_t i = 0; i < 64; i++)
+      masks[i] = (1ULL << i) - 1;
+    for (uint_t i = 0; i < 64; i++)
+      bits[i] = (1ULL << i);
+  };
+
+  // Bit Masks
+  std::array<uint_t, 64> masks;
+  std::array<uint_t, 64> bits;
+
+  /**
+   * Note that the following function requires the qubit indexes to be sorted
+   * in ascending qubit order
+   * Eg: qs_srt = {0, 1, 2}
+   */
+  template <size_t N>
+  uint_t index0(const std::array<uint_t, N> &qs_srt, const uint_t k) const;
+
+  /**
+   * This function does not require the qubits to be sorted, but takes as input
+   * the result from index0, and applies the index for the qubits in the order
+   * specified by qs.
+   */
+  template <size_t N>
+  std::array<uint_t, 1ULL << N> indexes(const std::array<uint_t, N> &qs,
+                                        const std::array<uint_t, N> &qs_srt,
+                                        const uint_t k) const;
+
+  std::array<uint_t, 4> indexes(const std::array<uint_t, 2> &qs,
+                                const std::array<uint_t, 2> &qs_srt,
+                                const uint_t k) const;
+
+  std::array<uint_t, 2> indexes(const std::array<uint_t, 1> &qs,
+                                const std::array<uint_t, 1> &qs_srt,
+                                const uint_t k) const;
+};
 
 /***************************************************************************/ /**
   *
@@ -277,23 +316,66 @@ void to_json(json_t &js, const Clifford &clif);
  */
 void from_json(const json_t &js, Clifford &clif);
 
-namespace QV {
-/**
- * Convert a QubitVector to JSON.
- */
-void to_json(json_t &js, const QubitVector &qv);
-
-/**
- * Parse a QubitVector from JSON.
- */
-void from_json(const json_t &js, QubitVector &qv);
-}
-
 /*******************************************************************************
  *
  * Implementations
  *
  ******************************************************************************/
+//------------------------------------------------------------------------------
+// MultiPartiteIndex methods
+//------------------------------------------------------------------------------
+
+template <size_t N>
+uint_t MultiPartiteIndex::index0(const std::array<uint_t, N> &qs_srt,
+                                 const uint_t k) const {
+  uint_t lowbits = 0, mask = 0;
+  for (size_t j = 0; j < N; j++) {
+    mask ^= masks[qs_srt[j] - j];
+    lowbits |= (k & mask) << j;
+  }
+  uint_t retval = k >> (qs_srt[N - 1] - N + 1);
+  retval <<= (qs_srt[N - 1] + 1);
+  retval |= lowbits;
+  return retval;
+}
+
+template <size_t N>
+std::array<uint_t, 1ULL << N>
+MultiPartiteIndex::indexes(const std::array<uint_t, N> &qs,
+                           const std::array<uint_t, N> &qs_srt,
+                           const uint_t k) const {
+  std::array<uint_t, 1ULL << N> ret;
+  ret[0] = index0<N>(qs_srt, k);
+  for (size_t i = 0; i < N; i++) {
+    const auto n = 1ULL << i;
+    const auto bit = bits[qs[i]];
+    for (size_t j = 0; j < n; j++)
+      ret[n + j] = ret[j] | bit;
+  }
+  return ret;
+}
+
+std::array<uint_t, 2>
+MultiPartiteIndex::indexes(const std::array<uint_t, 1> &qs,
+                           const std::array<uint_t, 1> &qs_srt,
+                           const uint_t k) const {
+  std::array<uint_t, 2> ret;
+  ret[0] = index0(qs_srt, k);
+  ret[1] = ret[0] | bits[qs[0]];
+  return ret;
+}
+
+std::array<uint_t, 4>
+MultiPartiteIndex::indexes(const std::array<uint_t, 2> &qs,
+                           const std::array<uint_t, 2> &qs_srt,
+                           const uint_t k) const {
+  std::array<uint_t, 4> ret;
+  ret[0] = index0(qs_srt, k);
+  ret[1] = ret[0] | bits[qs[0]];
+  ret[2] = ret[0] | bits[qs[1]];
+  ret[3] = ret[1] | bits[qs[1]];
+  return ret;
+}
 
 //------------------------------------------------------------------------------
 // JSON Helper Functions
@@ -313,7 +395,7 @@ json_t JSON::load(std::string name) {
     ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     try {
       ifile.open(name);
-    } catch (std::exception &e) {
+    } catch (std::system_error &e) {
       throw std::runtime_error(std::string("no such file or directory"));
     }
     ifile >> js;
@@ -521,16 +603,6 @@ void from_json(const json_t &js, Clifford &clif) {
   }
 }
 
-void QV::to_json(json_t &js, const QubitVector &qv) {
-  to_json(js, qv.vector());
-}
-
-void QV::from_json(const json_t &js, QubitVector &qv) {
-  cvector_t tmp;
-  from_json(js, tmp);
-  qv = tmp;
-}
-
 //------------------------------------------------------------------------------
 // ostream overloads
 //------------------------------------------------------------------------------
@@ -600,16 +672,10 @@ std::ostream &operator<<(std::ostream &out, const std::set<T1> &s) {
 }
 
 // ostream overload for BinaryVector
-inline std::ostream &operator<<(std::ostream &out, const BinaryVector &bv) {
-  out << bv.getData();
+inline std::ostream &operator<<(std::ostream &out, const BinaryVector &b) {
+  auto vec = b.getData();
+  out << vec;
   return out;
 }
-
-// ostream overload for QubitVector
-inline std::ostream &operator<<(std::ostream &out, const QubitVector &qv) {
-  out << qv.vector();
-  return out;
-}
-
 //------------------------------------------------------------------------------
 #endif

@@ -21,17 +21,34 @@ Interface to C++ quantum circuit simulator with realistic noise.
 
 import json
 import logging
+import numbers
 import os
+import subprocess
+from subprocess import PIPE
 import platform
+
 import numpy as np
+
 from qiskit._result import Result
 from qiskit.backends import BaseBackend
-from qiskit.cython.qasm_simulator import SimulatorWrapper
+
+from qiskit.cython.qiskit_simulator import SimulatorWrapper
 
 logger = logging.getLogger(__name__)
 
+EXTENSION = '.exe' if platform.system() == 'Windows' else ''
 
-class QasmSimulatorCpp(BaseBackend):
+# Add path to compiled qiskit simulator
+DEFAULT_SIMULATOR_PATHS = [
+    # This is the path where Makefile creates the simulator by default
+    os.path.abspath(os.path.dirname(__file__) + \
+                    '../../../out/src/qiskit-simulator/qiskit_simulator' + EXTENSION),
+    # This is the path where PIP installs the simulator
+    os.path.abspath(os.path.dirname(__file__) + '/qiskit_simulator' + EXTENSION),
+]
+
+
+class QISKitCppSimulator(BaseBackend):
     """C++ quantum circuit simulator with realistic noise"""
 
     def __init__(self, configuration=None):
@@ -41,23 +58,35 @@ class QasmSimulatorCpp(BaseBackend):
         if not configuration:
             self._configuration = {
                 'name': 'local_qiskit_simulator',
-                'url': 'https://github.com/QISKit/qiskit-sdk-py/src/qasm-simulator-cpp',
+                'url': 'https://github.com/QISKit/qiskit-sdk-py/src/cpp-simulator',
                 'simulator': True,
                 'local': True,
                 'description': 'A C++ realistic noise simulator for qobj files',
                 'coupling_map': 'all-to-all',
-                "basis_gates": 'u1,u2,u3,cx,id,x,y,z,h,s,sdg,t,tdg,rzz' +
-                               'snapshot,wait,noise,save,load'
+                "basis_gates": 'u1,u2,u3,cx,id,x,y,z,h,s,sdg,t,tdg,wait,noise,save,load,uzz',
             }
 
+        # Try to use the default executable if not specified.
+        if self._configuration.get('exe'):
+            paths = [self._configuration.get('exe')]
+        else:
+            paths = DEFAULT_SIMULATOR_PATHS
+
+        # Ensure that the executable is available.
+        try:
+            self._configuration['exe'] = next(
+                path for path in paths if (os.path.exists(path) and
+                                           os.path.getsize(path) > 100))
+        except StopIteration:
+            raise FileNotFoundError('Simulator executable not found (using %s)' %
+                                    self._configuration.get('exe', 'default locations'))
+
     def run(self, q_job):
-        """Run a QuantumJob on the the backend."""
         qobj = q_job.qobj
         simulator = SimulatorWrapper()
         result = simulator.run(json.dumps(qobj, cls=QASMSimulatorEncoder))
         result = json.loads(result, cls=QASMSimulatorDecoder)
         return Result(result, qobj)
-
 
 class CliffordCppSimulator(BaseBackend):
     """"C++ Clifford circuit simulator with realistic noise."""
@@ -69,16 +98,30 @@ class CliffordCppSimulator(BaseBackend):
         if not configuration:
             self._configuration = {
                 'name': 'local_clifford_simulator',
-                'url': 'https://github.com/QISKit/qiskit-sdk-py/src/qasm-simulator-cpp',
+                'url': 'https://github.com/QISKit/qiskit-sdk-py/src/cpp-simulator',
                 'simulator': True,
                 'local': True,
                 'description': 'A C++ Clifford simulator with approximate noise',
                 'coupling_map': 'all-to-all',
-                'basis_gates': 'cx,id,x,y,z,h,s,sdg,snapshot,wait,noise,save,load'
+                'basis_gates': 'cx,id,x,y,z,h,s,sdg,wait,noise,save,load'
             }
 
+        # Try to use the default executable if not specified.
+        if self._configuration.get('exe'):
+            paths = [self._configuration.get('exe')]
+        else:
+            paths = DEFAULT_SIMULATOR_PATHS
+
+        # Ensure that the executable is available.
+        try:
+            self._configuration['exe'] = next(
+                path for path in paths if (os.path.exists(path) and
+                                           os.path.getsize(path) > 100))
+        except StopIteration:
+            raise FileNotFoundError('Simulator executable not found (using %s)' %
+                                    self._configuration.get('exe', 'default locations'))
+
     def run(self, q_job):
-        """Run a QuantumJob on the the backend."""
         qobj = q_job.qobj
         # set backend to Clifford simulator
         if 'config' in qobj:
@@ -92,52 +135,52 @@ class CliffordCppSimulator(BaseBackend):
         return Result(result, qobj)
 
 
-class QASMSimulatorEncoder(json.JSONEncoder):
+
+def run(qobj, executable):
     """
-    JSON encoder for NumPy arrays and complex numbers.
+    Run simulation on C++ simulator inside a subprocess.
 
-    This functions as the standard JSON Encoder but adds support
-    for encoding:
-        complex numbers z as lists [z.real, z.imag]
-        ndarrays as nested lists.
+    Args:
+        qobj (dict): qobj dictionary defining the simulation to run
+        executable (string): filename (with path) of the simulator executable
+    Returns:
+        dict: A dict of simulation results
     """
+    if 'config' in qobj:
+        qobj['config'] = __to_json_complex(qobj['config'])
 
-    # pylint: disable=method-hidden,arguments-differ
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        if isinstance(obj, complex):
-            return [obj.real, obj.imag]
-        return json.JSONEncoder.default(self, obj)
+    for j in range(len(qobj['circuits'])):
+        if 'config' in qobj['circuits'][j]:
+            __generate_coherent_error_matrix(qobj['circuits'][j]['config'])
+            qobj['circuits'][j]['config'] = __to_json_complex(
+                qobj['circuits'][j]['config'])
 
+    # Open subprocess and execute external command
+    try:
+        with subprocess.Popen([executable, '-'],
+                              stdin=PIPE, stdout=PIPE, stderr=PIPE) as proc:
+            cin = json.dumps(qobj).encode()
+            cout, cerr = proc.communicate(cin)
+        if cerr:
+            logger.error('ERROR: Simulator encountered a runtime error: %s',
+                         cerr.decode())
 
-class QASMSimulatorDecoder(json.JSONDecoder):
-    """
-    JSON decoder for the output from C++ qasm_simulator.
+        cresult = json.loads(cout.decode())
 
-    This converts complex vectors and matrices into numpy arrays
-    for the following keys.
-    """
-    def __init__(self, *args, **kwargs):
-        json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+        if 'result' in cresult:
+            # If not Clifford simulator parse JSON complex numbers in output
+            if cresult.get('simulator') != 'clifford':
+                for result in cresult['result']:
+                    if result['success'] is True:
+                        __parse_sim_data(result['data'])
+                        if 'noise_params' in result:
+                            __parse_noise_params(result['noise_params'])
+        return cresult
 
-    # pylint: disable=method-hidden
-    def object_hook(self, obj):
-        """Special decoding rules for simulator output."""
-
-        for key in ['U_error', 'density_matrix']:
-            # JSON is a complex matrix
-            if key in obj and isinstance(obj[key], list):
-                tmp = np.array(obj[key])
-                obj[key] = tmp[::, ::, 0] + 1j * tmp[::, ::, 1]
-        for key in ['quantum_state', 'inner_products']:
-            # JSON is a list of complex vectors
-            if key in obj:
-                for j in range(len(obj[key])):
-                    if isinstance(obj[key][j], list):
-                        tmp = np.array(obj[key][j])
-                        obj[key][j] = tmp[::, 0] + 1j * tmp[::, 1]
-        return obj
+    except FileNotFoundError:
+        msg = "ERROR: Simulator exe not found at: %s" % executable
+        logger.error(msg)
+        return {"status": msg, "success": False}
 
 
 def cx_error_matrix(cal_error, zz_error):
@@ -220,7 +263,7 @@ def x90_error_matrix(cal_error, detuning_error):
     return x90_noise.dot(x90_ideal.conj().T)
 
 
-def _generate_coherent_error_matrix(config):
+def __generate_coherent_error_matrix(config):
     """
     Generate U_error matrix for CX and X90 gates.
 
@@ -255,3 +298,80 @@ def _generate_coherent_error_matrix(config):
                 u_error = u_error.dot(x90_error_matrix(cal_error,
                                                        detuning_error))
                 config['noise_params']['X90']['U_error'] = u_error
+
+
+def __to_json_complex(obj):
+    """Converts a numpy array to a nested list.
+    This is for exporting to JSON. Complex numbers are converted to
+    a length two list z -> [z.real, z.imag].
+    """
+    if isinstance(obj, complex):
+        obj = [obj.real, obj.imag]
+        return obj
+    elif isinstance(obj, (np.ndarray, list)):
+        obj = list(obj)
+        for i, _ in enumerate(obj):
+            obj[i] = __to_json_complex(obj[i])
+        return obj
+    elif isinstance(obj, dict):
+        for i, j in obj.items():
+            obj[i] = __to_json_complex(j)
+        return obj
+
+    return obj
+
+
+def __parse_json_complex_single(val):
+    if isinstance(val, list) \
+            and len(val) == 2 \
+            and isinstance(val[0], numbers.Real) \
+            and isinstance(val[1], numbers.Real):
+        return val[0] + 1j * val[1]
+    elif isinstance(val, numbers.Real):
+        return val
+    return val
+
+
+def __parse_json_complex(val):
+    if isinstance(val, list):
+        return np.array([__parse_json_complex_single(j) for j in val])
+    elif isinstance(val, dict):
+        return {i: __parse_json_complex_single(j) for i, j in val.items()}
+    return val
+
+
+def __parse_noise_params(noise):
+    if isinstance(noise, dict):
+        for key, val in noise.items():
+            if isinstance(val, dict):
+                if 'U_error' in val:
+                    tmp = np.array([__parse_json_complex(row)
+                                    for row in val['U_error']])
+                    noise[key]['U_error'] = tmp
+
+
+def __parse_sim_data(data):
+    if 'quantum_states' in data:
+        tmp = [__parse_json_complex(psi) for psi in data['quantum_states']]
+        data['quantum_states'] = tmp
+    if 'density_matrix' in data:
+        tmp = np.array([__parse_json_complex(row)
+                        for row in data['density_matrix']])
+        data['density_matrix'] = tmp
+    if 'inner_products' in data:
+        tmp = [__parse_json_complex(ips) for ips in data['inner_products']]
+        data['inner_products'] = tmp
+    if 'saved_quantum_states' in data:
+        for j in range(len(data['saved_quantum_states'])):
+            tmp = {}
+            for key, val in data['saved_quantum_states'][j].items():
+                val = __parse_json_complex(val)
+                tmp[int(key)] = val
+            data['saved_quantum_states'][j] = tmp
+    if 'saved_density_matrix' in data:
+        for j in range(len(data['saved_density_matrix'])):
+            tmp = {}
+            for key, val in data['saved_density_matrix'][j].items():
+                val = np.array([__parse_json_complex(row) for row in val])
+                tmp[int(key)] = val
+            data['saved_density_matrix'][j] = tmp

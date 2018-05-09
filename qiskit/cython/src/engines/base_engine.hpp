@@ -36,12 +36,12 @@ namespace QISKIT {
  * This base class implements basic computation of simulator results for the
  * BaseBackend class and subclasses. This includes getting the bitstring values
  * from the classical register and basic functions for recording the final
- * quantum state, classical state, and snapshots of the quantum state, for each 
- * shot of the simulation.
+ * quantum state, classical state, and saved quantum states, for each shot of
+ * the simulation.
  *
  * This is done using default JSON conversion for the StateType, so if no such
- * conversion to JSON has been defined it will not be able to display the quantum
- * state snapshopts.
+ * conversion to JSON has been defined it will not be able to display the final
+ * or saved quantum states.
  *
  * Derived Classes:
  *
@@ -50,26 +50,22 @@ namespace QISKIT {
  * verions of those functions as well.
  ******************************************************************************/
 
-template <typename StateType = QubitVector> class BaseEngine {
+template <typename StateType = cvector_t> class BaseEngine {
 
 public:
   //============================================================================
   // Configuration
   //============================================================================
 
-  // Counts formatting
   bool counts_show = true;     // Dislay the map of final creg bitstrings
   bool counts_sort = true;     // Sort the map of bitstrings by occurence
   bool counts_space = true;    // Insert a space between named QISKIT cregs
   bool counts_bits_h2l = true; // Display bitstring with least sig to right
 
-  // Return list of final bitstrings for all shots
   bool show_final_creg = false; // Display a list of all observed outcomes
+  bool show_final_qreg = false;
+  bool show_saved_qreg = false;
 
-  // Return dictionary of snapshopts of quantum state
-  bool show_snapshots = true;  // Display a list of qreg snapshots
-
-  // Use a custom initial state for simulation
   bool initial_state_flag = false;
 
   //============================================================================
@@ -81,22 +77,24 @@ public:
   double time_taken = 0.; // Time taken for simulation of current results
   counts_t counts;        // Map of observed final creg values
 
-  // Quantum state snapshots
-  std::map<int, std::vector<StateType>> snapshots;   // final qreg state for each shot
-  //std::map<uint_t, std::vector<StateType>> snapshots;   // final qreg state for each shot
-  
-  // Classical states
+  // Final States
   std::vector<std::string> output_creg; // creg string for each shot
+  std::vector<StateType> output_qreg;   // final qreg state for each shot
+
+  // Saved qreg states
+  std::vector<std::map<uint_t, StateType>> saved_qreg;
 
   // Initial State
   StateType initial_state;
+
+  // OMP Threshold for backend
+  int_t omp_threshold = -1; // < 0 for automatic
 
   //============================================================================
   // Constructors
   //============================================================================
 
-  BaseEngine() = default;
-  virtual ~BaseEngine() = default;
+  BaseEngine(){};
 
   //============================================================================
   // Methods
@@ -112,8 +110,8 @@ public:
    * @param nshots the number of simulation shots to run
    */
   virtual void run_program(Circuit &circ, BaseBackend<StateType> *be,
-                           uint_t nshots = 1);
-  virtual void initialize(BaseBackend<StateType> *be);
+                           uint_t nshots = 1, uint_t nthreads = 1);
+  virtual void initialize(BaseBackend<StateType> *be, uint_t nthreads);
   virtual void execute(Circuit &circ, BaseBackend<StateType> *be,
                        uint_t nshots);
 
@@ -152,14 +150,18 @@ public:
 template <typename StateType>
 void BaseEngine<StateType>::run_program(Circuit &prog,
                                         BaseBackend<StateType> *be,
-                                        uint_t nshots) {
-  initialize(be);
+                                        uint_t nshots, uint_t nthreads) {
+  initialize(be, nthreads);
   execute(prog, be, nshots);
   total_shots += nshots;
 }
 
 template <typename StateType>
-void BaseEngine<StateType>::initialize(BaseBackend<StateType> *be) {
+void BaseEngine<StateType>::initialize(BaseBackend<StateType> *be,
+                                       uint_t nthreads) {
+  // Set OpenMP settings
+  be->set_omp_threads(nthreads);
+  be->set_omp_threshold(omp_threshold);
   // Set custom initial state
   if (initial_state_flag)
     be->set_initial_state(initial_state);
@@ -169,8 +171,7 @@ template <typename StateType>
 void BaseEngine<StateType>::execute(Circuit &prog, BaseBackend<StateType> *be,
                                     uint_t nshots) {
   for (uint_t ishot = 0; ishot < nshots; ++ishot) {
-    be->initialize(prog);
-    be->execute(prog.operations);
+    be->execute(prog);
     compute_results(prog, be);
   }
 }
@@ -181,11 +182,13 @@ void BaseEngine<StateType>::compute_results(Circuit &qasm,
   // Compute counts
   compute_counts(qasm.clbit_labels, be->access_creg());
 
-  // Snapshots
-  if (show_snapshots && be->access_snapshots().empty() == false)
-    for (const auto& pair: be->access_snapshots()) {
-    snapshots[pair.first].push_back(pair.second);
-  }
+  // Final state
+  if (show_final_qreg)
+    output_qreg.push_back(be->access_qreg());
+
+  // Saved states
+  if (show_saved_qreg && be->access_saved().empty() == false)
+    saved_qreg.push_back(be->access_saved());
 }
 
 template <typename StateType>
@@ -233,14 +236,17 @@ void BaseEngine<StateType>::add(const BaseEngine<StateType> &eng) {
   for (auto pair : eng.counts)
     counts[pair.first] += pair.second;
 
-  // copy snapshots
-  for (const auto &s: eng.snapshots)
-    std::copy(s.second.begin(), s.second.end(),
-              back_inserter(snapshots[s.first]));
-
   // copy output cregs
   std::copy(eng.output_creg.begin(), eng.output_creg.end(),
             std::back_inserter(output_creg));
+
+  // copy output qregs
+  std::copy(eng.output_qreg.begin(), eng.output_qreg.end(),
+            back_inserter(output_qreg));
+
+  // copy saved qregs
+  std::copy(eng.saved_qreg.begin(), eng.saved_qreg.end(),
+            back_inserter(saved_qreg));
 }
 
 /*******************************************************************************
@@ -256,20 +262,28 @@ inline void to_json(json_t &js, const BaseEngine<StateType> &engine) {
     js["counts"] = engine.counts;
 
   if (engine.show_final_creg && engine.output_creg.empty() == false)
-    js["classical_state"] = engine.output_creg;
+    js["classical_states"] = engine.output_creg;
 
-  if (engine.show_snapshots && engine.snapshots.empty() == false) {
-    
+  if (engine.show_final_qreg && engine.output_qreg.empty() == false)
     try {
       // use try incase state class doesn't have json conversion method
-      for (const auto& pair: engine.snapshots)
-        js["snapshots"][std::to_string(pair.first)]["quantum_state"] = pair.second;
+      json_t js_qreg = engine.output_qreg;
+      js["quantum_states"] = js_qreg;
     } catch (std::exception &e) {
       // Leave message in output that type conversion failed
-      js["quantum_state"] =
+      js["quantum_states"] = "Error: Failed to convert state type to JSON";
+    }
+
+  if (engine.show_saved_qreg && engine.saved_qreg.empty() == false)
+    try {
+      // use try incase state class doesn't have json conversion method
+      json_t js_qreg = engine.saved_qreg;
+      js["saved_quantum_states"] = js_qreg;
+    } catch (std::exception &e) {
+      // Leave message in output that type conversion failed
+      js["saved_quantum_states"] =
           "Error: Failed to convert state type to JSON";
     }
-  }
 }
 
 template <typename StateType>
@@ -291,8 +305,10 @@ inline void from_json(const json_t &js, BaseEngine<StateType> &engine) {
         engine.counts_bits_h2l = false;
       else if (o == "classicalstate" || o == "classicalstates")
         engine.show_final_creg = true;
-      else if (o == "hidesnapshots" || o == "hidesnapshots")
-        engine.show_snapshots = false;
+      else if (o == "quantumstate" || o == "quantumstates")
+        engine.show_final_qreg = true;
+      else if (o == "savedquantumstates" || o == "savedquantumstate")
+        engine.show_saved_qreg = true;
     }
   }
 
@@ -301,6 +317,8 @@ inline void from_json(const json_t &js, BaseEngine<StateType> &engine) {
     engine.initial_state_flag = true;
   }
 
+  // Get omp threshold
+  JSON::get_value(engine.omp_threshold, "omp_threshold", js);
 }
 
 //------------------------------------------------------------------------------

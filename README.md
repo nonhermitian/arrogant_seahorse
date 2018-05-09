@@ -44,4 +44,3 @@ If everything passes (it should), installation is:
 ```
 python setup.py install
 ```
-
