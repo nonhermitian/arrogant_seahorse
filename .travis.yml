@@ -4,14 +4,6 @@ language: python
 
 matrix:
   include:
-    - python: 3.6
-      env:
-        - PYFLAKES=1 PEP8=1
-      install:
-        - pip install pyflakes pycodestyle
-      script:
-        - pyflakes qiskit
-        - pycodestyle qiskit
     - python: 3.5
       env: CC=gcc-5 CXX=g++-5
     - python: 3.6
