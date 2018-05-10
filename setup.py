@@ -34,8 +34,8 @@ AUTHOR = "QISKit Development Team"
 AUTHOR_EMAIL = "qiskit@us.ibm.com"
 LICENSE = "Apache 2.0"
 MAJOR = 0
-MINOR = 4
-MICRO = 15
+MINOR = 5
+MICRO = 0
 ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 KEYWORDS = "qiskit sdk quantum"
@@ -92,7 +92,7 @@ PACKAGES = ["qiskit",
             "qiskit.dagcircuit",
             "qiskit.extensions",
             "qiskit.extensions.standard",
-            "qiskit.extensions.qiskit_simulator",
+            "qiskit.extensions.qasm_simulator_cpp",
             "qiskit.extensions.quantum_initializer",
             "qiskit.mapper",
             "qiskit.qasm",
@@ -166,8 +166,8 @@ if "CFLAGS" in cfg_vars:
     cfg_vars["CFLAGS"] = cfg_vars["CFLAGS"].replace("-Wstrict-prototypes", "")
 
 # Simulator extension
-qasm_simulator = Extension('qiskit.cython.qiskit_simulator',
-                           sources=['qiskit/cython/qiskit_simulator.pyx'],
+qasm_simulator = Extension('qiskit.cython.qasm_simulator',
+                           sources=['qiskit/cython/qasm_simulator.pyx'],
                            extra_link_args=extra_link_args,
                            extra_compile_args=extra_compile_args,
                            libraries=libraries,
@@ -178,8 +178,6 @@ qasm_simulator = Extension('qiskit.cython.qiskit_simulator',
 EXT_MODULES.append(qasm_simulator)
 
 # Add command for running unittests from setup.py
-
-
 class TestCommand(Command):
     """Run unittests from setup."""
     description = 'Run unittests from setup'
@@ -204,8 +202,8 @@ class PylintCommand(Command):
     """Run Pylint on all QISKit Python source files."""
     description = 'Run Pylint on QISKIT Python source files'
     user_options = [
-        # The format is (long option, short option, description).
-        ('pylint-rcfile=', None, 'path to Pylint config file')]
+      # The format is (long option, short option, description).
+      ('pylint-rcfile=', None, 'path to Pylint config file')]
 
     def initialize_options(self):
         """Set default values for options."""
@@ -284,7 +282,7 @@ class CoverageCommand(Command):
     def run(self):
         """Run command."""
         command = 'coverage erase; coverage run --source qiskit -m unittest ' \
-            'discover -s test -q; coverage html'
+                'discover -s test -q; coverage html'
         subprocess.run(command, shell=True, stderr=subprocess.STDOUT)
 
 
@@ -297,7 +295,7 @@ setup(
     include_dirs=include_dirs,
     headers=HEADERS,
     ext_modules=cythonize(EXT_MODULES),
-    cmdclass={'build_ext': build_ext, 'test': TestCommand,
+    cmdclass={'build_ext': build_ext, 'test': TestCommand, 
               'lint': PylintCommand, 'pep8': PEP8Command,
               'profile': ProfileCommand,
               'coverage': CoverageCommand},

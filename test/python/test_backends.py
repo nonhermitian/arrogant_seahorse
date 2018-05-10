@@ -101,8 +101,6 @@ class TestBackends(QiskitTestCase):
         backend_list = qiskit.backends.discover_remote_backends(api)
         config_keys = {'name', 'simulator', 'local', 'description',
                        'coupling_map', 'basis_gates'}
-        backend_list.remove('ibmqx_hpc_qasm_simulator')
-        backend_list.remove('ibmqx_qasm_simulator')
         if backend_list:
             backend = backend_list[0]
         my_backend = qiskit.backends.get_backend_instance(backend)
@@ -118,8 +116,6 @@ class TestBackends(QiskitTestCase):
         """
         api = IBMQuantumExperience(QE_TOKEN, {'url': QE_URL})
         backend_list = qiskit.backends.discover_remote_backends(api)
-        backend_list.remove('ibmqx_hpc_qasm_simulator')
-        backend_list.remove('ibmqx_qasm_simulator')
         if backend_list:
             backend = backend_list[0]
         my_backend = qiskit.backends.get_backend_instance(backend)
@@ -135,8 +131,6 @@ class TestBackends(QiskitTestCase):
         """
         api = IBMQuantumExperience(QE_TOKEN, {'url': QE_URL})
         backend_list = qiskit.backends.discover_remote_backends(api)
-        backend_list.remove('ibmqx_hpc_qasm_simulator')
-        backend_list.remove('ibmqx_qasm_simulator')
         if backend_list:
             backend = backend_list[0]
         my_backend = qiskit.backends.get_backend_instance(backend)
