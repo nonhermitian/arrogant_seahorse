@@ -33,7 +33,7 @@ CC=clang CXX=clang python setup.py install
 You must have Visual Studio 2015 (not 2017) installed with the optional C++ and Python packages installed.  The [Community Edition](https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409) is free.
 
 ### Universal
-To build the `c++` modules, go to the installation directory and run:
+To build the `c++` modules, go to the installation directory and run (on Windows, you should run the commands below in the 'Anaconda Prompt'):
 
 ```
 python setup.py build_ext --inplace
