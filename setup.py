@@ -83,7 +83,8 @@ REQUIRES = [
     "ply (==3.10)",
     "scipy (>=0.19,<=1.0)",
     "Sphinx (>=1.6)",
-    "sympy (>=1.0)"]
+    "sympy (>=1.0)",
+    "jsonschema (>=2.6)"]
 
 INSTALL_REQUIRES = REQUIRES
 
