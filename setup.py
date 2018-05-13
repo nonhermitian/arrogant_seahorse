@@ -36,7 +36,7 @@ LICENSE = "Apache 2.0"
 MAJOR = 0
 MINOR = 5
 MICRO = 0
-ISRELEASED = False
+ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 KEYWORDS = "qiskit sdk quantum"
 PLATFORMS = ["Linux", "OSX", "Unix", "Windows"]
@@ -83,26 +83,31 @@ REQUIRES = [
     "ply (==3.10)",
     "scipy (>=0.19,<=1.0)",
     "Sphinx (>=1.6)",
-    "sympy (>=1.0)"]
+    "sympy (>=1.0)",
+    "jsonschema (>=2.6)"]
 
 INSTALL_REQUIRES = REQUIRES
 
 PACKAGES = ["qiskit",
             "qiskit.backends",
+            "qiskit.backends.ibmq",
+            "qiskit.backends.local",
+            "qiskit.cython",
             "qiskit.dagcircuit",
             "qiskit.extensions",
             "qiskit.extensions.standard",
-            "qiskit.extensions.qasm_simulator_cpp",
+            "qiskit.extensions.simulator",
             "qiskit.extensions.quantum_initializer",
             "qiskit.mapper",
             "qiskit.qasm",
             "qiskit.qasm._node",
+            "qiskit.schemas",
             "qiskit.unroll",
             "qiskit.tools",
             "qiskit.tools.apps",
             "qiskit.tools.qcvv",
             "qiskit.tools.qi",
-            "qiskit.cython"]
+            "qiskit.wrapper"]
 
 PACKAGE_DATA = {}
 HEADERS = []

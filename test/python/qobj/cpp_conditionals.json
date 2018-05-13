@@ -3,7 +3,7 @@
     "config": {
         "shots": 1,
         "seed": 1,
-        "backend": "local_qasm_simulator_cpp"
+        "backend_name": "local_qasm_simulator_cpp"
     },
     "circuits": [
         {
@@ -33,7 +33,12 @@
                     	"qubits": [1], 
                     	"conditional": {"type": "equals", "mask": "0x1", "val": "0x1"}
                     },
-                    {"name": "snapshot", "params": [0]}
+                    {"name": "snapshot", "params": [0]},
+                    {
+                    	"name": "measure", 
+                    	"qubits": [0],
+                    	"clbits": [0]
+                    }
                 ]
             }
         },
@@ -100,7 +105,12 @@
                     	"qubits": [1], 
                     	"conditional": {"type": "equals", "mask": "0x2", "val": "0x1"}
                     },
-                    {"name": "snapshot", "params": [0]}
+                    {"name": "snapshot", "params": [0]},
+                    {
+                    	"name": "measure", 
+                    	"qubits": [0],
+                    	"clbits": [0]
+                    }
                 ]
             }
         },
