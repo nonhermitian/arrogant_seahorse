@@ -90,6 +90,8 @@ INSTALL_REQUIRES = REQUIRES
 
 PACKAGES = ["qiskit",
             "qiskit.backends",
+            "qiskit.backends.ibmq",
+            "qiskit.backends.local",
             "qiskit.cython",
             "qiskit.dagcircuit",
             "qiskit.extensions",
