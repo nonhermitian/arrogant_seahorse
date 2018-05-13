@@ -23,6 +23,11 @@ In this case, the build instructions below are slightly modified:
 ```
 CC=clang CXX=clang python setup.py build_ext --inplace
 ```
+and
+
+```
+CC=clang CXX=clang python setup.py install
+```
 
 ### Windows
 You must have Visual Studio 2015 (not 2017) installed with the optional C++ and Python packages installed.  The [Community Edition](https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409) is free.
