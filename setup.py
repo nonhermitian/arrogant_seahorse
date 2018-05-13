@@ -198,7 +198,7 @@ class TestCommand(Command):
 
     def run(self):
         """Run command."""
-        command = 'python3 -m unittest discover -s test -v'
+        command = 'python -m unittest discover -s test -v'
         subprocess.run(command, shell=True, stderr=subprocess.STDOUT)
 
 
@@ -266,7 +266,7 @@ class ProfileCommand(Command):
 
     def run(self):
         """Run command."""
-        command = 'python3 -m unittest discover -p "profile*.py" -v'
+        command = 'python -m unittest discover -p "profile*.py" -v'
         subprocess.run(command, shell=True, stderr=subprocess.STDOUT)
 
 
