@@ -90,6 +90,7 @@ INSTALL_REQUIRES = REQUIRES
 
 PACKAGES = ["qiskit",
             "qiskit.backends",
+            "qiskit.cython",
             "qiskit.dagcircuit",
             "qiskit.extensions",
             "qiskit.extensions.standard",
@@ -98,12 +99,13 @@ PACKAGES = ["qiskit",
             "qiskit.mapper",
             "qiskit.qasm",
             "qiskit.qasm._node",
+            "qiskit.schemas",
             "qiskit.unroll",
             "qiskit.tools",
             "qiskit.tools.apps",
             "qiskit.tools.qcvv",
             "qiskit.tools.qi",
-            "qiskit.cython"]
+            "qiskit.wrapper"]
 
 PACKAGE_DATA = {}
 HEADERS = []
