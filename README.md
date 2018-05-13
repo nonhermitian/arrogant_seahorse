@@ -31,7 +31,7 @@ You must have Visual Studio 2015 (not 2017) installed with the optional C++ and 
 To build the `c++` modules, go to the installation directory and run:
 
 ```
-python setup.py build_ext -inplace
+python setup.py build_ext --inplace
 ```
 To run the tests (online tests require that you have your `Qconfig.py` file in the same directory as `setup.py`:
 
