@@ -36,7 +36,7 @@ LICENSE = "Apache 2.0"
 MAJOR = 0
 MINOR = 5
 MICRO = 0
-ISRELEASED = False
+ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 KEYWORDS = "qiskit sdk quantum"
 PLATFORMS = ["Linux", "OSX", "Unix", "Windows"]
@@ -92,7 +92,7 @@ PACKAGES = ["qiskit",
             "qiskit.dagcircuit",
             "qiskit.extensions",
             "qiskit.extensions.standard",
-            "qiskit.extensions.qasm_simulator_cpp",
+            "qiskit.extensions.simulator",
             "qiskit.extensions.quantum_initializer",
             "qiskit.mapper",
             "qiskit.qasm",
