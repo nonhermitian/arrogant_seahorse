@@ -21,7 +21,7 @@ export CPPFLAGS="$CXXFLAGS -I/usr/local/Celler/llvm/6.0.0/include"
 In this case, the build instructions below are slightly modified:
 
 ```
-CC=clang CXX=clang python setup.py build_ext -inplace
+CC=clang CXX=clang python setup.py build_ext --inplace
 ```
 
 ### Windows
