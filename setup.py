@@ -35,7 +35,7 @@ AUTHOR_EMAIL = "qiskit@us.ibm.com"
 LICENSE = "Apache 2.0"
 MAJOR = 0
 MINOR = 5
-MICRO = 0
+MICRO = 1
 ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 KEYWORDS = "qiskit sdk quantum"
@@ -76,12 +76,12 @@ CLASSIFIERS = [
     "Topic :: Scientific/Engineering"]
 
 REQUIRES = [
-    "IBMQuantumExperience (>=1.8.26)",
-    "matplotlib (>=2.0,<=2.1)",
-    "networkx (>=1.11,<1.12)",
-    "numpy (>=1.13,<=1.14)",
+    "IBMQuantumExperience (>=1.9.1)",
+    "matplotlib (>=2.1)",
+    "networkx (>=2.0)",
+    "numpy (>=1.13)",
     "ply (==3.10)",
-    "scipy (>=0.19,<=1.0)",
+    "scipy (>=1.0)",
     "Sphinx (>=1.6)",
     "sympy (>=1.0)",
     "jsonschema (>=2.6)"]

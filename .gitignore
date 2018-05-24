@@ -101,3 +101,4 @@ ENV/
 .mypy_cache/
 .DS_Store
 qiskit/cython/qasm_simulator.cpp
+Qconfig.py
