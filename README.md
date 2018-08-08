@@ -1,5 +1,7 @@
 # Quantum Information Software Kit (QISKit) [0.5.0]
 
+- [ ] Push my commits to GitHub
+
 [![Build Status](https://travis-ci.org/nonhermitian/arrogant_seahorse.svg?branch=master)](https://travis-ci.org/nonhermitian/arrogant_seahorse)
 
 ## Installation
